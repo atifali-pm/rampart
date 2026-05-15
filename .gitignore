@@ -47,3 +47,6 @@ redis-data/
 
 # Screenshots placeholder
 screenshots/.keep
+
+# Claude Code local settings (per-machine permission allowlist)
+.claude/

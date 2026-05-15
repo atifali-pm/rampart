@@ -18,4 +18,4 @@ def test_root_endpoint():
     assert response.status_code == 200
     body = response.json()
     assert body["service"] == "rampart"
-    assert body["phase"] == "0-scaffold"
+    assert body["phase"] == "1-deterministic-core"

@@ -38,7 +38,7 @@ The deterministic core never calls an LLM. The AI services read the event stream
 ## Phases
 
 - **Phase 0 (scaffold)**: repo, structure, README, HANDS-ON, docker-compose for postgres+redis, FastAPI hello-world, React shell. Done.
-- **Phase 1**: FSM engine + audit log + enforcement engine on the happy path (one job type, scheduled to closed). Smoke tests for false-closeout rejection.
+- **Phase 1**: FSM engine + audit log + enforcement engine on the happy path (one job type, scheduled to closed), with the false-closeout rejection proven by tests. Done.
 - **Phase 2**: event bus (Redis Streams) + SLA watcher + override/escalation flow. Dashboard renders live job board.
 - **Phase 3**: incident command engine, command bridge view, on-call rotation, escalation ladder.
 - **Phase 4**: AI layer (triage, dispatch, closeout drafter, audit chat) via Gemini 2.5 Flash.
@@ -46,6 +46,14 @@ The deterministic core never calls an LLM. The AI services read the event stream
 
 ## Screenshots
 
-Screenshots land here once Phase 2 ships and the command centre dashboard renders real state.
+### Phase 1: deterministic core, all tests green
 
-![Placeholder](screenshots/.gitkeep)
+![Phase 1 test suite](screenshots/01-phase1-tests-green.png)
+
+Twelve tests cover the FSM edge map, the R001 closeout-evidence rule (happy and four denial paths), and two end-to-end paths against a real Postgres: the full happy path from scheduled to closed, and a false closeout that R001 must reject.
+
+### Phase 1: the false closeout, forensically recorded
+
+![Phase 1 audit trail](screenshots/02-phase1-audit-trail.png)
+
+When R001 denies a closeout, the denied transition still lands in the audit log alongside a per-rule row that lists exactly which evidence was missing. The job state stays at `closeout_pending`. The audit story is: nothing happened, and the system can prove who tried, when, and why it was blocked.
