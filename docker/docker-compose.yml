@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rampart-postgres
+    environment:
+      POSTGRES_USER: rampart
+      POSTGRES_PASSWORD: rampart
+      POSTGRES_DB: rampart
+    ports:
+      - "5456:5432"
+    volumes:
+      - rampart_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rampart -d rampart"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: rampart-redis
+    ports:
+      - "6382:6379"
+    volumes:
+      - rampart_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  rampart_postgres_data:
+  rampart_redis_data:

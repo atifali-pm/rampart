@@ -1,0 +1,51 @@
+# Rampart
+
+Enforcement-first operational OS for field service ops. Deterministic workflow engine, AI-augmented incident command.
+
+Rampart runs the operational side of any field service business: dispatching jobs to technicians, enforcing SLA windows, opening an incident command bridge when sites escalate, and keeping an immutable audit trail of every state change and every override. The deterministic core never lets a job be falsely closed. The AI layer triages incidents, ranks dispatch options, drafts closeout reports, and answers natural-language questions over the audit log.
+
+## What it does
+
+Rampart sits between dispatchers, field technicians, supervisors, and the command centre. Every job runs through a strict workflow with guards and side effects on each transition. Every transition is auditable. Every override is captured with actor, role, justification, and approval. When a job risks breaching its SLA, the system raises a warning before the breach, then an enforcement event at breach, then escalates up the on-call ladder if nobody acknowledges it. The command-centre dashboard shows the whole field as a live operational twin.
+
+## Features
+
+### Deterministic core (the part that cannot lie)
+
+- **Workflow state machine**: declarative FSM per job type, atomic transitions, guards run pre-transition, side effects run post-transition.
+- **Centralized enforcement engine**: one decision point for "can this actor make this transition right now?" Returns `allow`, `deny`, `allow_with_override`, or `escalate`, with structured reason codes.
+- **Override + escalation**: every override is captured with justification, supervisor approval, and expiry. Escalation ladder per severity, from dispatcher to command centre.
+- **Audit persistence**: every state change writes a row in the same transaction. Immutable change log. Integrity-checkable.
+- **Real-time event bus**: Redis Streams broadcasts every operational event so any subscriber (dashboard, SLA watcher, AI layer) can react.
+
+### Operations layer
+
+- **Dispatch intelligence**: technician ranking by skill match, distance, current load, historical SLA performance.
+- **Incident command**: opens an incident room bundling the job, all events, active responders, timeline, on-call rotation, and chat.
+- **SLA watcher**: background worker checks open jobs against deadlines, emits warnings before breach and enforcement events at breach.
+- **Predictive risk scoring**: per-job risk score from tech performance, site difficulty, weather, parts availability.
+- **Digital operational twin**: live aggregated view of every site and every tech, materialized from the event stream.
+
+### AI layer (Gemini-powered, recommendation only)
+
+The deterministic core never calls an LLM. The AI services read the event stream and write back recommendations that humans approve.
+
+- **Triage agent**: classifies incident severity + recommended escalation level from the event timeline.
+- **Dispatch agent**: ranks available techs for a new job, dispatcher commits.
+- **Closeout drafter**: drafts the customer-facing report from work log + photos; tech edits and signs.
+- **Audit chat**: natural-language Q&A over the audit log and event store, returns a timeline view.
+
+## Phases
+
+- **Phase 0 (scaffold)**: repo, structure, README, HANDS-ON, docker-compose for postgres+redis, FastAPI hello-world, React shell. Done.
+- **Phase 1**: FSM engine + audit log + enforcement engine on the happy path (one job type, scheduled to closed). Smoke tests for false-closeout rejection.
+- **Phase 2**: event bus (Redis Streams) + SLA watcher + override/escalation flow. Dashboard renders live job board.
+- **Phase 3**: incident command engine, command bridge view, on-call rotation, escalation ladder.
+- **Phase 4**: AI layer (triage, dispatch, closeout drafter, audit chat) via Gemini 2.5 Flash.
+- **Phase 5**: predictive risk + digital twin + adversarial test suite + walkthrough video + portfolio site case study.
+
+## Screenshots
+
+Screenshots land here once Phase 2 ships and the command centre dashboard renders real state.
+
+![Placeholder](screenshots/.gitkeep)
