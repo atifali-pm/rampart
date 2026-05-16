@@ -41,7 +41,7 @@ The deterministic core never calls an LLM. The AI services read the event stream
 - **Phase 1**: FSM engine + audit log + enforcement engine on the happy path (one job type, scheduled to closed), with the false-closeout rejection proven by tests. Done.
 - **Phase 2**: Redis Streams event bus, SLA watcher (warning + breach), override capture with R003 (manager role + justification + expiry), and a live React command-centre dashboard polling the API. Done.
 - **Phase 3**: incident room model (job, severity, responders, chat, system timeline), severity-based escalation ladder, on-call rotation lookup, command-bridge panel in the dashboard, SLA-breach auto-opens an incident. Done.
-- **Phase 4**: AI layer (triage, dispatch, closeout drafter, audit chat) via Gemini 2.5 Flash.
+- **Phase 4**: AI layer with a provider abstraction (Groq for real LLM, deterministic Echo for offline), four agents (triage, dispatch, closeout drafter, audit chat), every output saved as a recommendation that humans commit. Triage card + audit chat panel in the dashboard. Done.
 - **Phase 5**: predictive risk + digital twin + adversarial test suite + walkthrough video + portfolio site case study.
 
 ## Screenshots
@@ -75,3 +75,9 @@ The job that was stuck at `closeout_pending` / BREACH in the previous shot is no
 ![Phase 3 incident room](screenshots/05-phase3-incident-room.png)
 
 The SLA-breached job is no longer a passive row on the board. The watcher emitted `sla.breach`, the bridge auto-opened a `HIGH` incident in the same transaction, the on-call dispatcher was seated as the level-1 responder, and a system message landed in the chat. A second action escalated the incident to level 2, pulling the on-call supervisor in. The two chat lines under the ladder are the dispatcher noting the LTE problem and the supervisor approving the manual override. Every step is in `incident_messages`, every responder is in `incident_responders`, every state change is in `transitions`. The event stream on the right shows the full chain from `transition.denied` and `sla.breach` through `incident.opened`, `incident.escalated`, and the two `incident.message` entries.
+
+### Phase 4: AI layer (triage + audit chat)
+
+![Phase 4 AI surface](screenshots/06-phase4-ai.png)
+
+A `TRIAGE AGENT` card sits inside the command bridge: severity tier, recommended action, confidence, one-line rationale, and the standing reminder that this is a recommendation only. The bottom-right `AUDIT CHAT` panel takes a natural-language question, hands a candidate slice of the audit log + recent incidents + recent events to the configured provider, and writes the answer plus structured citations back. Every agent output lands in `ai_recommendations` (agent, target_kind, target_id, input, output, provider, model, status) so the dashboard can replay history without re-asking the LLM. The provider abstraction means the same agent code runs on a deterministic Echo provider with no key, and flips to Groq the moment `GROQ_API_KEY` lands in `.env`. The deterministic core never imports the AI module: an LLM can suggest, never decide.

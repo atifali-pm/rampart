@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, EventRow, IncidentListRow, JobBoardRow, SlaStatus } from "./api";
+import { AuditChat } from "./AuditChat";
 import { IncidentRoom } from "./IncidentRoom";
 
 const POLL_MS = 3000;
@@ -185,7 +186,7 @@ export function App() {
       <header style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.6rem" }}>Rampart Command Centre</h1>
         <p style={{ color: "#9aa0aa", marginTop: "0.25rem", fontSize: "0.9rem" }}>
-          Phase 3: live job board, SLA enforcement, override audit trail, incident command bridge.
+          Phase 4: live job board, SLA enforcement, override audit trail, incident command bridge, AI triage + audit chat.
         </p>
       </header>
 
@@ -242,6 +243,11 @@ export function App() {
             EVENT STREAM
           </h2>
           <EventStream events={events} />
+
+          <h2 style={{ fontSize: "1rem", color: "#9aa0aa", margin: "1rem 0 0.5rem 0" }}>
+            AI
+          </h2>
+          <AuditChat pollMs={POLL_MS} />
         </div>
       </section>
     </main>

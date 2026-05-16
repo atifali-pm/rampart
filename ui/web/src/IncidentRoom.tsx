@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, IncidentDetail } from "./api";
+import { TriageCard } from "./TriageCard";
 
 const SEVERITY_COLOR: Record<string, string> = {
   low: "#7be0a4",
@@ -157,6 +158,7 @@ export function IncidentRoom({ incidentId, pollMs }: { incidentId: string; pollM
       </div>
 
       <Ladder incident={detail} />
+      <TriageCard incidentId={detail.id} pollMs={pollMs} />
       <Timeline incident={detail} />
     </div>
   );

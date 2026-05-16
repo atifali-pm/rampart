@@ -9,6 +9,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.routes.ai import router as ai_router
 from src.api.routes.events import router as events_router
 from src.api.routes.incidents import router as incidents_router
 from src.api.routes.jobs import router as jobs_router
@@ -17,7 +18,7 @@ from src.api.routes.transitions import router as transitions_router
 app = FastAPI(
     title="Rampart",
     description="Enforcement-first operational OS for field service ops.",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 # Dev-only permissive CORS so the Vite dev server on :5174 can hit the
@@ -33,14 +34,15 @@ app.include_router(jobs_router)
 app.include_router(transitions_router)
 app.include_router(events_router)
 app.include_router(incidents_router)
+app.include_router(ai_router)
 
 
 @app.get("/")
 def root() -> dict[str, str]:
     return {
         "service": "rampart",
-        "version": "0.3.0",
-        "phase": "3-incident-command",
+        "version": "0.4.0",
+        "phase": "4-ai-layer",
         "status": "hello",
     }
 

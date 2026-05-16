@@ -21,6 +21,9 @@ DEFAULT_REDIS_URL = "redis://localhost:6382/0"
 
 os.environ.setdefault("RAMPART_DATABASE_URL", DEFAULT_DSN)
 os.environ.setdefault("RAMPART_REDIS_URL", DEFAULT_REDIS_URL)
+# Force the deterministic provider for tests regardless of whether the
+# developer has GROQ_API_KEY in their shell.
+os.environ["RAMPART_AI_PROVIDER"] = "echo"
 
 
 def _can_connect() -> bool:
@@ -53,7 +56,8 @@ def db() -> Iterator[psycopg.Connection]:
     with psycopg.connect(os.environ["RAMPART_DATABASE_URL"]) as conn:
         conn.execute(
             """
-            TRUNCATE overrides, enforcement_decisions, transitions,
+            TRUNCATE ai_recommendations, technicians,
+                     overrides, enforcement_decisions, transitions,
                      incident_messages, incident_responders, incidents,
                      on_call_schedule,
                      sla_alerts, tech_checkins, checklist_items, photos, jobs, sites

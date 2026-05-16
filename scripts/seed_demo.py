@@ -14,6 +14,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+from src.ai import audit_chat, triage_agent
 from src.engine.db import transaction
 from src.engine.fsm import JobState
 from src.engine.transition_service import request_transition
@@ -99,9 +100,29 @@ def _seed_on_call() -> None:
         seed_oncall(conn, role="command_centre", actor_id=uuid4(), actor_name="Cal Command")
 
 
+def _seed_techs() -> None:
+    techs = [
+        ("Alex Inverter",   ["inverter_repair"],         33.69, 73.04, 1, 0.95),
+        ("Brook Panel",     ["panel_clean"],             33.70, 73.06, 0, 0.88),
+        ("Casey Inverter",  ["inverter_repair", "wiring"], 33.71, 73.05, 3, 0.92),
+        ("Drew Wiring",     ["wiring"],                  33.72, 73.07, 2, 0.81),
+    ]
+    with transaction() as conn:
+        for name, skills, lat, lon, load, sla in techs:
+            conn.execute(
+                """
+                INSERT INTO technicians (name, skills, home_latitude, home_longitude,
+                                         current_load, historical_sla_pct)
+                VALUES (%s, %s::jsonb, %s, %s, %s, %s)
+                """,
+                (name, '["' + '","'.join(skills) + '"]', lat, lon, load, sla),
+            )
+
+
 def main() -> None:
     _wipe()
     _seed_on_call()
+    _seed_techs()
     site = _site()
 
     job_a = _job(site, timedelta(hours=4))
@@ -162,6 +183,13 @@ def main() -> None:
             actor_role="supervisor",
             body="Approving manual override; recording justification in audit.",
         )
+        # Run the triage agent so the dashboard's Triage card is pre-filled.
+        triage_agent.run(incident_id=inc[0])
+
+    # Pre-seed an audit-chat answer so the dashboard panel has visible content.
+    audit_chat.ask(
+        question="Why was the closeout denied on the breached job? Look at R001.",
+    )
 
     print(
         "Seeded: "
