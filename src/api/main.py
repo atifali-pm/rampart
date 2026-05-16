@@ -10,13 +10,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes.events import router as events_router
+from src.api.routes.incidents import router as incidents_router
 from src.api.routes.jobs import router as jobs_router
 from src.api.routes.transitions import router as transitions_router
 
 app = FastAPI(
     title="Rampart",
     description="Enforcement-first operational OS for field service ops.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 # Dev-only permissive CORS so the Vite dev server on :5174 can hit the
@@ -31,14 +32,15 @@ app.add_middleware(
 app.include_router(jobs_router)
 app.include_router(transitions_router)
 app.include_router(events_router)
+app.include_router(incidents_router)
 
 
 @app.get("/")
 def root() -> dict[str, str]:
     return {
         "service": "rampart",
-        "version": "0.2.0",
-        "phase": "2-event-bus-sla-overrides",
+        "version": "0.3.0",
+        "phase": "3-incident-command",
         "status": "hello",
     }
 

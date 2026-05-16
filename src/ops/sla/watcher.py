@@ -29,6 +29,8 @@ import psycopg
 from src.engine.db import transaction
 from src.engine.events import publish
 from src.engine.fsm import JobState
+from src.ops.incident import open_incident
+from src.ops.incident.on_call import NoOnCallError
 
 _log = logging.getLogger(__name__)
 
@@ -103,6 +105,19 @@ def run_once(conn: psycopg.Connection, *, now: datetime | None = None) -> list[S
             )
             if ev is not None:
                 emitted.append(ev)
+                # First-time breach for this job opens an incident in the
+                # same transaction. NoOnCallError means the on_call_schedule
+                # is incomplete in this environment; log and continue so the
+                # sla alert is not lost.
+                try:
+                    open_incident(
+                        job_id=job_id,
+                        severity="high",
+                        opened_reason="sla.breach",
+                        conn=conn,
+                    )
+                except NoOnCallError as exc:
+                    _log.warning("incident auto-open skipped job=%s err=%s", job_id, exc)
         else:
             ev = _record_and_publish(
                 conn, job_id=job_id, kind="sla.warning", deadline_at=deadline_at

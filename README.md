@@ -40,7 +40,7 @@ The deterministic core never calls an LLM. The AI services read the event stream
 - **Phase 0 (scaffold)**: repo, structure, README, HANDS-ON, docker-compose for postgres+redis, FastAPI hello-world, React shell. Done.
 - **Phase 1**: FSM engine + audit log + enforcement engine on the happy path (one job type, scheduled to closed), with the false-closeout rejection proven by tests. Done.
 - **Phase 2**: Redis Streams event bus, SLA watcher (warning + breach), override capture with R003 (manager role + justification + expiry), and a live React command-centre dashboard polling the API. Done.
-- **Phase 3**: incident command engine, command bridge view, on-call rotation, escalation ladder.
+- **Phase 3**: incident room model (job, severity, responders, chat, system timeline), severity-based escalation ladder, on-call rotation lookup, command-bridge panel in the dashboard, SLA-breach auto-opens an incident. Done.
 - **Phase 4**: AI layer (triage, dispatch, closeout drafter, audit chat) via Gemini 2.5 Flash.
 - **Phase 5**: predictive risk + digital twin + adversarial test suite + walkthrough video + portfolio site case study.
 
@@ -69,3 +69,9 @@ Four seeded jobs, four different SLA states. The left column reads from `GET /bo
 ![Phase 2 after override](screenshots/04-phase2-after-override.png)
 
 The job that was stuck at `closeout_pending` / BREACH in the previous shot is now `closed`. The event stream top entry shows `transition.applied · R003_OVERRIDE_APPROVED`, right above the original `transition.denied · R001_INCOMPLETE_CLOSEOUT_EVIDENCE`. The original denial row is still in the audit log; the override row in `overrides` links the denial to the new allow_with_override transition, with the manager's actor id, role, justification, and expiry recorded. The override never relaxes the rule, it only authorises this single bypass.
+
+### Phase 3: incident room with the command bridge
+
+![Phase 3 incident room](screenshots/05-phase3-incident-room.png)
+
+The SLA-breached job is no longer a passive row on the board. The watcher emitted `sla.breach`, the bridge auto-opened a `HIGH` incident in the same transaction, the on-call dispatcher was seated as the level-1 responder, and a system message landed in the chat. A second action escalated the incident to level 2, pulling the on-call supervisor in. The two chat lines under the ladder are the dispatcher noting the LTE problem and the supervisor approving the manual override. Every step is in `incident_messages`, every responder is in `incident_responders`, every state change is in `transitions`. The event stream on the right shows the full chain from `transition.denied` and `sla.breach` through `incident.opened`, `incident.escalated`, and the two `incident.message` entries.

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { api, EventRow, JobBoardRow, SlaStatus } from "./api";
+import { api, EventRow, IncidentListRow, JobBoardRow, SlaStatus } from "./api";
+import { IncidentRoom } from "./IncidentRoom";
 
 const POLL_MS = 3000;
 
@@ -160,6 +161,7 @@ function Stat({ label, value, color }: { label: string; value: number; color: st
 export function App() {
   const rows = useApiState(() => api.board(true), POLL_MS);
   const events = useApiState(() => api.events(20), POLL_MS);
+  const incidents = useApiState<IncidentListRow[]>(() => api.incidents(), POLL_MS);
 
   const stats = useMemo(() => {
     if (!rows) return { ok: 0, warning: 0, breach: 0, closed: 0 };
@@ -167,6 +169,8 @@ export function App() {
     for (const r of rows) out[r.sla_status]++;
     return out;
   }, [rows]);
+
+  const activeIncident = incidents && incidents.length > 0 ? incidents[0] : null;
 
   return (
     <main
@@ -181,7 +185,7 @@ export function App() {
       <header style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ margin: 0, fontSize: "1.6rem" }}>Rampart Command Centre</h1>
         <p style={{ color: "#9aa0aa", marginTop: "0.25rem", fontSize: "0.9rem" }}>
-          Phase 2: live job board, SLA enforcement, override audit trail.
+          Phase 3: live job board, SLA enforcement, override audit trail, incident command bridge.
         </p>
       </header>
 
@@ -203,9 +207,35 @@ export function App() {
           <h2 style={{ fontSize: "1rem", color: "#9aa0aa", margin: "0 0 0.5rem 0" }}>
             JOB BOARD
           </h2>
-          <div style={{ backgroundColor: "#15171c", borderRadius: "0.4rem", overflow: "hidden" }}>
+          <div
+            style={{
+              backgroundColor: "#15171c",
+              borderRadius: "0.4rem",
+              overflow: "hidden",
+              marginBottom: "1.25rem",
+            }}
+          >
             <JobBoard rows={rows} />
           </div>
+
+          <h2 style={{ fontSize: "1rem", color: "#9aa0aa", margin: "0 0 0.5rem 0" }}>
+            COMMAND BRIDGE
+          </h2>
+          {activeIncident ? (
+            <IncidentRoom incidentId={activeIncident.id} pollMs={POLL_MS} />
+          ) : (
+            <div
+              style={{
+                backgroundColor: "#15171c",
+                borderRadius: "0.4rem",
+                padding: "1rem",
+                color: "#9aa0aa",
+                fontSize: "0.85rem",
+              }}
+            >
+              no open incidents
+            </div>
+          )}
         </div>
         <div>
           <h2 style={{ fontSize: "1rem", color: "#9aa0aa", margin: "0 0 0.5rem 0" }}>

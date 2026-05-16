@@ -54,6 +54,8 @@ def db() -> Iterator[psycopg.Connection]:
         conn.execute(
             """
             TRUNCATE overrides, enforcement_decisions, transitions,
+                     incident_messages, incident_responders, incidents,
+                     on_call_schedule,
                      sla_alerts, tech_checkins, checklist_items, photos, jobs, sites
             RESTART IDENTITY CASCADE
             """
@@ -102,3 +104,15 @@ def job_id(db: psycopg.Connection, site_id: UUID) -> UUID:
 @pytest.fixture
 def actor_id() -> UUID:
     return uuid4()
+
+
+@pytest.fixture
+def on_call_seeded(db: psycopg.Connection) -> None:
+    """Seed the full on-call roster used by the escalation ladder."""
+    from src.ops.incident.on_call import seed
+
+    seed(db, role="dispatcher", actor_id=uuid4(), actor_name="Dee Dispatcher")
+    seed(db, role="supervisor", actor_id=uuid4(), actor_name="Sam Supervisor")
+    seed(db, role="on_call_manager", actor_id=uuid4(), actor_name="Maya Manager")
+    seed(db, role="command_centre", actor_id=uuid4(), actor_name="Cal Command")
+    db.commit()

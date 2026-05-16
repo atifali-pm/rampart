@@ -17,6 +17,8 @@ from uuid import UUID, uuid4
 from src.engine.db import transaction
 from src.engine.fsm import JobState
 from src.engine.transition_service import request_transition
+from src.ops.incident import escalate, post_message
+from src.ops.incident.on_call import seed as seed_oncall
 from src.ops.sla.watcher import run_once
 
 SITE_NAME = "Pinedale Substation"
@@ -89,8 +91,17 @@ def _walk(job_id: UUID, *targets: JobState, role: str = "tech") -> None:
         request_transition(job_id=job_id, to_state=t, actor_id=actor, actor_role=role)
 
 
+def _seed_on_call() -> None:
+    with transaction() as conn:
+        seed_oncall(conn, role="dispatcher", actor_id=uuid4(), actor_name="Dee Dispatcher")
+        seed_oncall(conn, role="supervisor", actor_id=uuid4(), actor_name="Sam Supervisor")
+        seed_oncall(conn, role="on_call_manager", actor_id=uuid4(), actor_name="Maya Manager")
+        seed_oncall(conn, role="command_centre", actor_id=uuid4(), actor_name="Cal Command")
+
+
 def main() -> None:
     _wipe()
+    _seed_on_call()
     site = _site()
 
     job_a = _job(site, timedelta(hours=4))
@@ -127,6 +138,30 @@ def main() -> None:
 
     with transaction() as conn:
         run_once(conn)
+
+    # Drive the auto-opened incident through one escalation and add chat
+    # so the dashboard's command bridge has visible content.
+    with transaction() as conn:
+        inc = conn.execute(
+            "SELECT id FROM incidents WHERE job_id = %s AND status = 'open'",
+            (job_d,),
+        ).fetchone()
+    if inc is not None:
+        escalate(incident_id=inc[0])
+        post_message(
+            incident_id=inc[0],
+            actor_id=uuid4(),
+            actor_name="Dee Dispatcher",
+            actor_role="dispatcher",
+            body="Tech is on site but photo upload is failing on the LTE link.",
+        )
+        post_message(
+            incident_id=inc[0],
+            actor_id=uuid4(),
+            actor_name="Sam Supervisor",
+            actor_role="supervisor",
+            body="Approving manual override; recording justification in audit.",
+        )
 
     print(
         "Seeded: "
