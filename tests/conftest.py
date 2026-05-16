@@ -14,10 +14,13 @@ from uuid import UUID, uuid4
 
 import psycopg
 import pytest
+import redis as redis_lib
 
 DEFAULT_DSN = "postgresql://rampart:rampart@localhost:5456/rampart"
+DEFAULT_REDIS_URL = "redis://localhost:6382/0"
 
 os.environ.setdefault("RAMPART_DATABASE_URL", DEFAULT_DSN)
+os.environ.setdefault("RAMPART_REDIS_URL", DEFAULT_REDIS_URL)
 
 
 def _can_connect() -> bool:
@@ -29,7 +32,19 @@ def _can_connect() -> bool:
         return False
 
 
+def _can_connect_redis() -> bool:
+    try:
+        client = redis_lib.Redis.from_url(os.environ["RAMPART_REDIS_URL"], socket_connect_timeout=2)
+        client.ping()
+        return True
+    except Exception:
+        return False
+
+
 requires_db = pytest.mark.skipif(not _can_connect(), reason="Postgres on :5456 not reachable")
+requires_redis = pytest.mark.skipif(
+    not _can_connect_redis(), reason="Redis on :6382 not reachable"
+)
 
 
 @pytest.fixture
@@ -39,11 +54,18 @@ def db() -> Iterator[psycopg.Connection]:
         conn.execute(
             """
             TRUNCATE overrides, enforcement_decisions, transitions,
-                     tech_checkins, checklist_items, photos, jobs, sites
+                     sla_alerts, tech_checkins, checklist_items, photos, jobs, sites
             RESTART IDENTITY CASCADE
             """
         )
         conn.commit()
+        # Best-effort: flush the rampart events stream so tests do not see
+        # bleed-through from prior runs.
+        try:
+            client = redis_lib.Redis.from_url(os.environ["RAMPART_REDIS_URL"])
+            client.delete("rampart:events")
+        except Exception:
+            pass
         yield conn
 
 

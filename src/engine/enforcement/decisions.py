@@ -43,10 +43,18 @@ class EnforcementOutcome:
         return self.decision in (Decision.DENY, Decision.ESCALATE)
 
 
+# Priority ordering when multiple rules fire on one transition.
+#
+# ESCALATE wins outright: a malformed override never goes through.
+# ALLOW_WITH_OVERRIDE beats DENY: an approved override is *how* the system
+# legitimately bypasses an underlying denial. Both rule rows still land in
+# the audit log, so the forensic trace records the denial AND the override
+# that authorized it.
+# DENY beats ALLOW: any unsatisfied rule blocks an unsupervised transition.
 _DECISION_PRIORITY = {
-    Decision.DENY: 4,
-    Decision.ESCALATE: 3,
-    Decision.ALLOW_WITH_OVERRIDE: 2,
+    Decision.ESCALATE: 4,
+    Decision.ALLOW_WITH_OVERRIDE: 3,
+    Decision.DENY: 2,
     Decision.ALLOW: 1,
 }
 

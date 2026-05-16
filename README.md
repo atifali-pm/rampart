@@ -39,7 +39,7 @@ The deterministic core never calls an LLM. The AI services read the event stream
 
 - **Phase 0 (scaffold)**: repo, structure, README, HANDS-ON, docker-compose for postgres+redis, FastAPI hello-world, React shell. Done.
 - **Phase 1**: FSM engine + audit log + enforcement engine on the happy path (one job type, scheduled to closed), with the false-closeout rejection proven by tests. Done.
-- **Phase 2**: event bus (Redis Streams) + SLA watcher + override/escalation flow. Dashboard renders live job board.
+- **Phase 2**: Redis Streams event bus, SLA watcher (warning + breach), override capture with R003 (manager role + justification + expiry), and a live React command-centre dashboard polling the API. Done.
 - **Phase 3**: incident command engine, command bridge view, on-call rotation, escalation ladder.
 - **Phase 4**: AI layer (triage, dispatch, closeout drafter, audit chat) via Gemini 2.5 Flash.
 - **Phase 5**: predictive risk + digital twin + adversarial test suite + walkthrough video + portfolio site case study.
@@ -57,3 +57,15 @@ Twelve tests cover the FSM edge map, the R001 closeout-evidence rule (happy and 
 ![Phase 1 audit trail](screenshots/02-phase1-audit-trail.png)
 
 When R001 denies a closeout, the denied transition still lands in the audit log alongside a per-rule row that lists exactly which evidence was missing. The job state stays at `closeout_pending`. The audit story is: nothing happened, and the system can prove who tried, when, and why it was blocked.
+
+### Phase 2: command-centre dashboard, live
+
+![Phase 2 dashboard](screenshots/03-phase2-dashboard.png)
+
+Four seeded jobs, four different SLA states. The left column reads from `GET /board` and colour-codes each row by deadline distance. The right column tails the Redis Streams event bus via `GET /events`, showing the `transition.applied` chain plus the `sla.warning`, `sla.breach`, and `transition.denied` entries the seed run produced. The dashboard polls every three seconds; in a real deployment it would subscribe to the stream directly.
+
+### Phase 2: manager override unblocks a denied closeout
+
+![Phase 2 after override](screenshots/04-phase2-after-override.png)
+
+The job that was stuck at `closeout_pending` / BREACH in the previous shot is now `closed`. The event stream top entry shows `transition.applied · R003_OVERRIDE_APPROVED`, right above the original `transition.denied · R001_INCOMPLETE_CLOSEOUT_EVIDENCE`. The original denial row is still in the audit log; the override row in `overrides` links the denial to the new allow_with_override transition, with the manager's actor id, role, justification, and expiry recorded. The override never relaxes the rule, it only authorises this single bypass.

@@ -71,5 +71,4 @@ def post_transition(job_id: UUID, body: TransitionRequest) -> TransitionResponse
     )
 
 
-# Helper to silence unused-import warnings while keeping the symbol importable.
 __all__ = ["router", "fetch_job_row"]
